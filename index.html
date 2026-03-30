@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İGSAŞ - Vibrasyon & Balans Simülatörü</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --igsaş-mavi: #0056b3; --soft-gray: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--soft-gray); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { color: var(--igsaş-mavi); text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .input-group { background: #f9f9f9; padding: 15px; border-radius: 10px; border-left: 5px solid var(--igsaş-mavi); }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: var(--igsaş-mavi); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #003d7a; }
+        #result { margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 10px; display: none; }
+        canvas { max-width: 100%; height: auto !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Vektörel Balans Simülatörü</h2>
+    
+    <div class="grid">
+        <!-- Mevcut Durum Verileri -->
+        <div class="input-group">
+            <h3>Mevcut Titreşim ($V_0$)</h3>
+            <label>Genlik (mm/s RMS):</label>
+            <input type="number" id="v0_amp" placeholder="Örn: 8.5" step="0.1">
+            <label>Faz Açısı (°):</label>
+            <input type="number" id="v0_phase" placeholder="0-360">
+        </div>
+
+        <!-- Deneme Ağırlığı Verileri -->
+        <div class="input-group">
+            <h3>Deneme Ağırlığı ($W_t$)</h3>
+            <label>Ağırlık (Gram):</label>
+            <input type="number" id="wt_mass" placeholder="Örn: 50">
+            <label>Konum (°):</label>
+            <input type="number" id="wt_phase" placeholder="0-360">
+        </div>
+    </div>
+
+    <button onclick="calculateBalance()">Simülasyonu Çalıştır</button>
+
+    <div id="result">
+        <h3>Önerilen Düzeltme:</h3>
+        <p id="calc_text" style="font-size: 18px; font-weight: bold; color: #d32f2f;"></p>
+        <canvas id="polarChart"></canvas>
+    </div>
+</div>
+
+<script>
+let chart;
+
+function calculateBalance() {
+    // Giriş Değerlerini Al
+    const v0_a = parseFloat(document.getElementById('v0_amp').value);
+    const v0_p = parseFloat(document.getElementById('v0_phase').value) * Math.PI / 180;
+    const wt_m = parseFloat(document.getElementById('wt_mass').value);
+    const wt_p = parseFloat(document.getElementById('wt_phase').value) * Math.PI / 180;
+
+    if(isNaN(v0_a) || isNaN(wt_m)) { alert("Lütfen değerleri tam girin!"); return; }
+
+    // Basit vektörel hesaplama mantığı (Temsili - Gerçek hesapta V1 değeri de gerekir)
+    // Burada kullanıcıya "Etki Katsayısı" üzerinden bir simülasyon sunulur.
+    
+    const correctionMass = (v0_a * 10).toFixed(1); // Örnek oranlama
+    const correctionAngle = (parseFloat(document.getElementById('v0_phase').value) + 180) % 360;
+
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('calc_text').innerText = 
+        `Hedef: ${correctionMass} gram ağırlığı ${correctionAngle}° açısına takın.`;
+
+    updateChart(v0_a, document.getElementById('v0_phase').value, correctionAngle);
+}
+
+function updateChart(amp, phase, corrPhase) {
+    const ctx = document.getElementById('polarChart').getContext('2d');
+    if(chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'polarArea',
+        data: {
+            labels: ['Mevcut Titreşim', 'Düzeltme Yönü'],
+            datasets: [{
+                data: [amp, amp*0.8],
+                backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(75, 192, 192, 0.5)']
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { r: { suggestionMin: 0 } }
+        }
+    });
+}
+</script>
+
+</body>
+</html>
